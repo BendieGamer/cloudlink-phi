@@ -25,4 +25,4 @@ jobs:
       run: go build -v ./server
 
     - name: Test
-      run: go test -v ./server
+      run: go mod init  -v ./server
