@@ -1,6 +1,3 @@
-# This workflow will build a golang project
-# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-go
-
 name: Go
 
 on:
@@ -10,20 +7,27 @@ on:
     branches: [ "main" ]
 
 jobs:
-
   build:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
 
     - name: Set up Go
-      uses: actions/setup-go@v4
+      uses: actions/setup-go@v5
       with:
         go-version: '1.20'
 
+    - name: Install dependencies
+      run: |
+        cd Server
+        go mod tidy
+
     - name: Build
-      run: go mod tidy -v Server
-    - name: Build2
-      run: go build .
+      run: |
+        cd Server
+        go build .
+
     - name: Test
-      run: go run .
+      run: |
+        cd Server
+        go test ./...
