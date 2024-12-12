@@ -19,15 +19,15 @@ jobs:
 
     - name: Install dependencies
       run: |
-        cd Server
+        cd server
         go mod tidy
 
     - name: Build
       run: |
-        cd Server
+        cd server
         go build .
 
     - name: Test
       run: |
-        cd Server
+        cd server
         go test ./...
