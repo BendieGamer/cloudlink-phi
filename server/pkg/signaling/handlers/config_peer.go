@@ -189,6 +189,9 @@ func CONFIG_PEER(s *structs.Server, client *structs.Client, rawpacket []byte, li
 	// Set the client to the current lobby
 	client.SetLobby(params.Payload.LobbyID)
 
+	// Store the client public key (if specified)
+	client.PublicKey = params.Payload.PublicKey
+
 	// Get the current lobby host
 	host, err := manager.GetLobbyHost(s, params.Payload.LobbyID, client.UGI)
 	if err != nil {
@@ -200,9 +203,10 @@ func CONFIG_PEER(s *structs.Server, client *structs.Client, rawpacket []byte, li
 	message.Code(
 		host,
 		"NEW_PEER",
-		&structs.PeerInfo{
-			ID:   client.ID,
-			User: client.Username,
+		&structs.NewPeerParams{
+			ID:        client.ID,
+			User:      client.Username,
+			PublicKey: client.PublicKey,
 		},
 		"",
 		nil,
@@ -217,9 +221,10 @@ func CONFIG_PEER(s *structs.Server, client *structs.Client, rawpacket []byte, li
 		only_peers,
 		&structs.SignalPacket{
 			Opcode: "ANTICIPATE",
-			Payload: &structs.PeerInfo{
-				ID:   client.ID,
-				User: client.Username,
+			Payload: &structs.NewPeerParams{
+				ID:        client.ID,
+				User:      client.Username,
+				PublicKey: client.PublicKey,
 			},
 		},
 	)
@@ -233,6 +238,19 @@ func CONFIG_PEER(s *structs.Server, client *structs.Client, rawpacket []byte, li
 		nil,
 	)
 
+	// Tell the peer to expect a connection from the host
+	message.Code(
+		client,
+		"ANTICIPATE",
+		&structs.NewPeerParams{
+			ID:        host.ID,
+			User:      host.Username,
+			PublicKey: host.PublicKey,
+		},
+		"",
+		nil,
+	)
+
 	// Notify the new peer about other peers in the lobby using the DISCOVER opcode.
 	// This tells the new peer to make connections with existing peers.
 	existing := manager.GetLobbyPeers(s, params.Payload.LobbyID, client.UGI)
@@ -243,9 +261,10 @@ func CONFIG_PEER(s *structs.Server, client *structs.Client, rawpacket []byte, li
 			client,
 			&structs.SignalPacket{
 				Opcode: "DISCOVER",
-				Payload: &structs.PeerInfo{
-					ID:   peer.ID,
-					User: peer.Username,
+				Payload: &structs.NewPeerParams{
+					ID:        peer.ID,
+					User:      peer.Username,
+					PublicKey: peer.PublicKey,
 				},
 			},
 		)
@@ -258,7 +277,7 @@ func CONFIG_PEER(s *structs.Server, client *structs.Client, rawpacket []byte, li
 		message.Code(
 			client,
 			"ANTICIPATE",
-			&structs.PeerInfo{
+			&structs.NewPeerParams{
 				ID:   "relay",
 				User: "relay",
 			},
@@ -285,7 +304,7 @@ func CONFIG_PEER(s *structs.Server, client *structs.Client, rawpacket []byte, li
 		message.Code(
 			client,
 			"DISCOVER",
-			&structs.PeerInfo{
+			&structs.NewPeerParams{
 				ID:   "relay",
 				User: "relay",
 			},
